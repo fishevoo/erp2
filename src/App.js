@@ -5,7 +5,12 @@ import logo from './images/logo.png';
 import userAvatar from './images/user-avatar.png';
 import Login from './Login';
 import { getData } from './services/api';
+import { addNewPRRawMaterial } from './services/prApi';
 import MTOList from './components/MTOList';
+import { usePRData } from './hooks/usePRData';
+import React from 'react';
+import Footer from './components/Footer';
+import PRRawMaterialForm from './components/PRRawMaterialForm';
 
 function App() {
   const [currentUser] = useState('Duta Alamin');
@@ -16,10 +21,28 @@ function App() {
   });
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [data, setData] = useState([]);
+  const [showPRForm, setShowPRForm] = useState(false);
+  const [prFormData, setPRFormData] = useState({
+    tanggal: '',
+    nomor: '',
+    division: '',
+    department: '',
+    section: '',
+    remark: '',
+    items: []
+  });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateRange, setDateRange] = useState({
+    startDate: '2025-01-01',
+    endDate: '2025-01-31'
+  });
+  const [isLoading, setIsLoading] = useState(false); // Fix useState declaration
+  const [isLoadingForm, setIsLoadingForm] = useState(false); // Add missing state
   
   const inputMenuItems = {
     'HRD': [
       'Cuti Karyawan',
+      'Consumable PR',
       'Keterlambatan & Ijin',
       'Cuti Potong Gaji',
       'Recruitment'
@@ -63,7 +86,23 @@ function App() {
     event.preventDefault();
     event.stopPropagation();
     
-    const formattedPage = menuItem.toLowerCase().replace(/\s+/g, '-');
+    // Update available features list 
+    const availableFeatures = [
+      'raw material mto',
+      'raw material pr',
+      'consumable pr',
+      'consumable rair',
+      'expense statement' 
+    ];
+
+    const formattedMenuItem = menuItem.toLowerCase();
+    
+    if (!availableFeatures.includes(formattedMenuItem)) {
+      alert('Mohon maaf, fitur ini sedang dalam pengembangan dan akan segera tersedia!');
+      return;
+    }
+    
+    const formattedPage = formattedMenuItem.replace(/\s+/g, '-');
     setActivePage(formattedPage);
     
     setMenuState({
@@ -114,18 +153,59 @@ function App() {
     setShowProfileMenu(false);
   };
 
+  const { prData, isLoading: isPRLoading, fetchPRData } = usePRData();
+
+  const handlePRSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoadingForm(true);
+    try {
+      await addNewPRRawMaterial(prFormData);
+      setShowPRForm(false);
+      setPRFormData({
+        tanggal: '',
+        nomor: '',
+        division: '',
+        department: '',
+        section: '',
+        remark: '',
+        items: []
+      });
+      await fetchPRData();
+    } catch (error) {
+      console.warn('Warning: Could not save PR');
+    } finally {
+      setIsLoadingForm(false);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       try {
         const result = await getData();
         setData(result);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.warn('Warning: Could not fetch initial data');
+        setData([]); // Set empty data instead of showing error
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    if (activePage === 'raw-material-pr' && mounted) {
+      fetchPRData();
+    }
+
+    return () => {
+      mounted = false; 
+    };
+  }, [activePage, fetchPRData]);
 
   const renderContent = () => {
     switch(activePage) {
@@ -288,61 +368,6 @@ function App() {
           </div>
         );
 
-      case 'input-data':
-        return (
-          <div className="data-input-container">
-            <h2>INPUT DATA</h2>
-            <form className="data-input-form">
-              <div className="form-group">
-                <label>Nama Proyek</label>
-                <input type="text" placeholder="Masukkan nama proyek" />
-              </div>
-              
-              <div className="form-group">
-                <label>Lokasi</label>
-                <input type="text" placeholder="Masukkan lokasi proyek" />
-              </div>
-              
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Tanggal Mulai</label>
-                  <input type="date" />
-                </div>
-                
-                <div className="form-group">
-                  <label>Tanggal Selesai</label>
-                  <input type="date" />
-                </div>
-              </div>
-              
-              <div className="form-group">
-                <label>Anggaran</label>
-                <input type="number" placeholder="Masukkan anggaran proyek" />
-              </div>
-              
-              <div className="form-group">
-                <label>Status</label>
-                <select>
-                  <option value="">Pilih status</option>
-                  <option value="planning">Perencanaan</option>
-                  <option value="ongoing">Sedang Berjalan</option>
-                  <option value="completed">Selesai</option>
-                </select>
-              </div>
-              
-              <div className="form-group">
-                <label>Deskripsi</label>
-                <textarea placeholder="Masukkan deskripsi proyek"></textarea>
-              </div>
-              
-              <div className="form-actions">
-                <button type="submit" className="btn-submit">Simpan Data</button>
-                <button type="reset" className="btn-reset">Reset</button>
-              </div>
-            </form>
-          </div>
-        );
-
       case 'raw-material-pr':
         return (
           <div className="pr-list-container">
@@ -351,6 +376,89 @@ function App() {
               <div className="pr-controls">
                 <div className="search-box">
                   <label>No. PR:</label>
+                  <input 
+                    type="text" 
+                    placeholder="Pencarian..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <div className="date-range">
+                  <label>Periode:</label>
+                  <input 
+                    type="date" 
+                    value={dateRange.startDate}
+                    onChange={(e) => setDateRange({...dateRange, startDate: e.target.value})}
+                  />
+                  <input 
+                    type="date" 
+                    value={dateRange.endDate}
+                    onChange={(e) => setDateRange({...dateRange, endDate: e.target.value})}
+                  />
+                </div>
+                <div className="action-buttons">
+                  <button onClick={() => setShowPRForm(true)}>
+                    <i className="fas fa-plus"></i> Add New
+                  </button>
+                  <button onClick={fetchPRData}>
+                    <i className="fas fa-sync"></i> Refresh
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* PR Form Modal */}
+            {showPRForm && (
+              <PRRawMaterialForm 
+                onClose={() => setShowPRForm(false)}
+                onSuccess={fetchPRData}
+                onSubmit={handlePRSubmit}
+                isLoading={isLoadingForm}
+              />
+            )}
+
+            {/* PR List Table */}
+            <div className="pr-table-container">
+              {isPRLoading ? (
+                <div className="loading">Loading...</div>
+              ) : (
+                <table className="pr-table">
+                  <thead>
+                    <tr>
+                      <th>NO.</th>
+                      <th>NOMOR</th>
+                      <th>JO</th>
+                      <th>TANGGAL</th>
+                      <th>PROJECT</th>
+                      <th>STATUS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {prData.map((item) => (
+                      <tr key={item.NO}>
+                        <td>{item.NO}</td>
+                        <td>{item.NOMOR}</td>
+                        <td>{item.JO}</td>
+                        <td>{item.TANGGAL}</td>
+                        <td>{item.PROJECT}</td>
+                        <td>{item.STATUS}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        );
+
+      case 'raw-material-mto':
+        return (
+          <div className="pr-list-container">
+            <div className="pr-header">
+              <h2>Daftar MTO Raw Material</h2>
+              <div className="pr-controls">
+                <div className="search-box">
+                  <label>No. MTO:</label>
                   <input type="text" placeholder="Pencarian..." />
                 </div>
                 <div className="date-range">
@@ -361,7 +469,12 @@ function App() {
                 <div className="action-buttons">
                   <button className="btn-print"><i className="fas fa-print"></i> Print</button>
                   <button className="btn-preview"><i className="fas fa-eye"></i> Preview</button>
-                  <button className="btn-add"><i className="fas fa-plus"></i> Add New</button>
+                  <button 
+                    className="btn-add"
+                    onClick={() => alert('Fitur Add New akan segera tersedia!')}
+                  >
+                    <i className="fas fa-plus"></i> Add New
+                  </button>
                   <button className="btn-delete"><i className="fas fa-trash"></i> Delete</button>
                   <button className="btn-refresh"><i className="fas fa-sync"></i> Refresh</button>
                 </div>
@@ -373,9 +486,9 @@ function App() {
                   <tr>
                     <th>NO.</th>
                     <th>NOMOR</th>
-                    <th>JO</th>
                     <th>TANGGAL</th>
-                    <th>PROJECT</th>
+                    <th>DEPARTEMEN</th>
+                    <th>KETERANGAN</th>
                     <th>STATUS</th>
                   </tr>
                 </thead>
@@ -384,24 +497,14 @@ function App() {
                     <tr key={index}>
                       <td>{item.NO}</td>
                       <td>{item.NOMOR}</td>
-                      <td>{item.JO}</td>
                       <td>{item.TANGGAL}</td>
-                      <td>{item.PROJECT}</td>
+                      <td>{item.DEPARTEMEN}</td>
+                      <td>{item.KETERANGAN}</td>
                       <td>{item.STATUS}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-          </div>
-        );
-
-      case 'raw-material-mto':
-        return (
-          <div className="pr-list-container">
-            <div className="pr-header">
-              <h2>Daftar MTO Raw Material</h2>
-              <MTOList />
             </div>
           </div>
         );
@@ -437,8 +540,7 @@ function App() {
                     <th>NO.</th>
                     <th>NOMOR</th>
                     <th>TANGGAL</th>
-                    <th>DEPARTEMEN</th>
-                    <th>KETERANGAN</th>
+                    <th>PROJECT</th>
                     <th>STATUS</th>
                   </tr>
                 </thead>
@@ -488,10 +590,14 @@ function App() {
                 <thead>
                   <tr>
                     <th>NO.</th>
-                    <th>NOMOR RAIR</th>
+                    <th>NO. RAIR</th>
                     <th>TANGGAL</th>
-                    <th>DEPARTEMEN</th>
-                    <th>KETERANGAN</th>
+                    <th>NO. PO</th>
+                    <th>TGL PO</th>
+                    <th>SUPPLIER</th>
+                    <th>NO. PR</th>
+                    <th>TGL PR</th>
+                    <th>COST CODE</th>
                     <th>STATUS</th>
                   </tr>
                 </thead>
@@ -508,6 +614,129 @@ function App() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        );
+
+      case 'expense-statement':
+        return (
+          <div className="pr-list-container">
+            <div className="pr-header">
+              <h2>Daftar Expense Statement</h2>
+              <div className="pr-controls">
+                <div className="search-box">
+                  <label>No. Expense:</label>
+                  <input type="text" placeholder="Pencarian..." />
+                </div>
+                <div className="date-range">
+                  <label>Periode:</label>
+                  <input type="date" defaultValue="2025-01-01" />
+                  <input type="date" defaultValue="2025-01-31" />
+                </div>
+                <div className="action-buttons">
+                  <button className="btn-print"><i className="fas fa-print"></i> Print</button>
+                  <button className="btn-preview"><i className="fas fa-eye"></i> Preview</button>
+                  <button className="btn-add"><i className="fas fa-plus"></i> Add New</button>
+                  <button className="btn-delete"><i className="fas fa-trash"></i> Delete</button>
+                  <button className="btn-refresh"><i className="fas fa-sync"></i> Refresh</button>
+                </div>
+              </div>
+            </div>
+            <div className="pr-table-container">
+              <table className="pr-table">
+                <thead>
+                  <tr>
+                    <th>NO.</th>
+                    <th>NO. EXP</th>
+                    <th>TANGGAL</th>
+                    <th>PERIODE</th>
+                    <th>KETERANGAN</th>
+                    <th>DEPARTEMEN</th>
+                    <th>TOTAL</th>
+                    <th>ADVANCE</th>
+                    <th>BALANCE</th> 
+                    <th>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.map((item, index) => (
+                    <tr key={index}>
+                      <td>{item.NO}</td>
+                      <td>{item.NOMOR}</td>
+                      <td>{item.TANGGAL}</td>
+                      <td>{item.DEPARTEMEN}</td>
+                      <td>{item.NILAI}</td>
+                      <td>{item.KETERANGAN}</td>
+                      <td>{item.STATUS}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+
+      case 'dashboard':
+        return (
+          <div>
+            <div className="welcome-section">
+              <h2>Enterprise Resource Planning</h2>
+              <h3>PT Karunia Berca Indonesia</h3>
+            </div>
+            
+            <div className="yearly-quotation">
+              <div className="quotation-header">
+                <h3>Yearly Quotation</h3>
+                <select defaultValue="2025">
+                  <option value="2025">2025</option>
+                  <option value="2024">2024</option>
+                  <option value="2023">2023</option>
+                </select>
+              </div>
+              
+              <div className="quotation-table-container">
+                <table className="quotation-table">
+                  <thead>
+                    <tr>
+                      <th>Description</th>
+                      <th>Tonage (Ton)</th>
+                      <th>Value (Mio)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><span className="arrow blue"></span> Tower - Transmission</td>
+                      <td>0.00</td>
+                      <td>0.00</td>
+                    </tr>
+                    <tr>
+                      <td><span className="arrow orange"></span> Tower - Telecommunication</td>
+                      <td>0.00</td>
+                      <td>0.00</td>
+                    </tr>
+                    <tr>
+                      <td><span className="arrow purple"></span> Bridges</td>
+                      <td>0.00</td>
+                      <td>0.00</td>
+                    </tr>
+                    <tr>
+                      <td><span className="arrow red"></span> Steel Structure</td>
+                      <td>0.00</td>
+                      <td>0.00</td>
+                    </tr>
+                    <tr>
+                      <td><span className="arrow green"></span> Others</td>
+                      <td>0.00</td>
+                      <td>0.00</td>
+                    </tr>
+                    <tr className="total-row">
+                      <td><strong>TOTAL</strong></td>
+                      <td><strong>0.00 T</strong></td>
+                      <td><strong>0.00 M</strong></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         );
@@ -529,7 +758,7 @@ function App() {
         <Route 
           path="/" 
           element={
-            <div className="App">
+            <div className="App" style={{ paddingBottom: '60px' }}>
               <nav className="navbar">
                 <div className="logo" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
                   <img src={logo} alt="Company Logo" />
@@ -633,10 +862,16 @@ function App() {
                 </aside>
 
                 <main className="content">
-                  {renderContent()}
+                  {isLoading ? (
+                    <div className="loading-spinner">Loading...</div>
+                  ) : (
+                    renderContent()
+                  )}
                 </main>
               </div>
+              <Footer />
             </div>
+
           } 
         />
         <Route path="/mto" element={<MTOList />} />
