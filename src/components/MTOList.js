@@ -4,7 +4,7 @@ import { message } from 'antd';
 
 const MTOList = () => {
   const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
   const [startDate, setStartDate] = useState('2025-01-01');
   const [endDate, setEndDate] = useState('2025-01-31');
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,7 +30,7 @@ const MTOList = () => {
   // Fungsi untuk print preview
   const handlePrintPreview = async (id) => {
     try {
-      const response = await axios.get(`http://localhost:5002/api/mto/${id}/preview`);
+      const response = await axios.get(`http://localhost:5004/api/mto/${id}/preview`);
       const printWindow = window.open('', '_blank');
       printWindow.document.write(`
         <html>
