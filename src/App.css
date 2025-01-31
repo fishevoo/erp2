@@ -1,6 +1,10 @@
 .App {
   text-align: center;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-bottom: 80px; 
 }
 
 .App-logo {
@@ -84,6 +88,8 @@
 .main-container {
   display: flex;
   height: calc(100vh - 64px);
+  flex: 1;
+  margin-bottom: 60px; /* Tambahkan margin bottom */
 }
 
 .sidebar {
@@ -640,13 +646,25 @@
 }
 
 .status-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  background: #e3f2fd;
-  color: #1976d2;
-  border-radius: 20px;
-  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
   font-weight: 500;
+}
+
+.status-badge.approval-1 {
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.status-badge.approved {
+  background-color: #f6ffed;
+  color: #52c41a;
+}
+
+.status-badge.pending {
+  background-color: #fff7e6;
+  color: #fa8c16;
 }
 
 /* Responsive adjustments */
@@ -892,4 +910,308 @@
     margin-left: 0;
     flex-wrap: wrap;
   }
+}
+
+/* PR Form Styles */
+.pr-form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.pr-form-container {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.pr-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 1000px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+  position: relative;
+}
+
+.pr-form-header {
+  background: #4c6ef5;
+  color: white;
+  padding: 1.5rem 2rem;
+  border-radius: 12px 12px 0 0;
+}
+
+.pr-form-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.pr-form-body {
+  padding: 2rem;
+}
+
+.pr-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.pr-form .form-group {
+  margin-bottom: 1.2rem;
+}
+
+.pr-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #444;
+}
+
+.pr-form input,
+.pr-form select,
+.pr-form textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+}
+
+.pr-form input:focus,
+.pr-form select:focus,
+.pr-form textarea:focus {
+  border-color: #4c6ef5;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.1);
+}
+
+.pr-form textarea {
+  min-height: 120px;
+  resize: vertical;
+  grid-column: 1 / -1;
+}
+
+.pr-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  border-radius: 0 0 12px 12px;
+}
+
+.pr-form .btn-submit,
+.pr-form .btn-cancel {
+  padding: 0.75rem 2rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 0.1s, background-color 0.2s;
+}
+
+.pr-form .btn-submit {
+  background: #4c6ef5;
+  color: white;
+}
+
+.pr-form .btn-cancel {
+  background: #e9ecef;
+  color: #495057;
+}
+
+.pr-form .btn-submit:hover {
+  background: #4263eb;
+  transform: translateY(-1px);
+}
+
+.pr-form .btn-cancel:hover {
+  background: #dee2e6;
+  transform: translateY(-1px);
+}
+
+.pr-form .btn-submit:active,
+.pr-form .btn-cancel:active {
+  transform: translateY(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .pr-form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pr-form-header {
+    padding: 1rem 1.5rem;
+  }
+  
+  .pr-form-body {
+    padding: 1.5rem;
+  }
+  
+  .pr-form-actions {
+    padding: 1rem 1.5rem;
+  }
+}
+
+/* Yearly Quotation Styling */
+.yearly-quotation {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.quotation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.quotation-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.quotation-header select {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #333;
+}
+
+.quotation-table-container {
+  overflow-x: auto;
+}
+
+.quotation-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.quotation-table th,
+.quotation-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.quotation-table th {
+  background: #f8f9fa;
+  font-weight: 500;
+  color: #333;
+}
+
+.quotation-table td {
+  color: #666;
+}
+
+.quotation-table .text-primary { color: #4c6ef5; }
+.quotation-table .text-warning { color: #ffd43b; }
+.quotation-table .text-info { color: #15aabf; }
+.quotation-table .text-danger { color: #fa5252; }
+.quotation-table .text-success { color: #40c057; }
+
+.quotation-table .total-row {
+  background: #f8f9fa;
+}
+
+.quotation-table .total-row td {
+  color: #333;
+  font-weight: bold;
+}
+
+/* Arrow styles */
+.arrow {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 5px 0 5px 8px;
+  margin-right: 10px;
+}
+
+.arrow.blue { border-color: transparent transparent transparent #4c6ef5; }
+.arrow.orange { border-color: transparent transparent transparent #ffd43b; }
+.arrow.purple { border-color: transparent transparent transparent #7950f2; }
+.arrow.red { border-color: transparent transparent transparent #fa5252; }
+.arrow.green { border-color: transparent transparent transparent #40c057; }
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .yearly-quotation {
+    padding: 15px;
+  }
+  
+  .quotation-table th,
+  .quotation-table td {
+    padding: 8px;
+    font-size: 14px;
+  }
+  
+  .quotation-header h3 {
+    font-size: 1rem;
+  }
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  font-size: 16px;
+  color: #666;
+}
+
+.pr-table tr:hover {
+  background-color: #f5f5f5;
+}
+
+.pr-table td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+/* Footer Styles */
+.footer-container {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  text-align: center;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  border-top: 1px solid #dee2e6;
+  z-index: 1000;
+  margin-top: auto;
+}
+
+.footer-text {
+  margin: 0;
 }
